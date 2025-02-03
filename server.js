@@ -79,11 +79,11 @@ async function getSatiricalQuote(originalQuote) {
             {
               role: "system",
               content:
-                "You are a moody and sarcastic assistant that turns profound quotes into sarcastic, cynical versions. You want to really ruin my day. Dark humor is your favorite trait. Only use few words. Your sarcastic quote should not be longer than the original! This is very important! If the original quote is positive and engaging, please turn it into a discouraging quote! You can be really daring! My fail is your greatest joy. Just roast me!!!",
+                "You are a satirical, cynical AI who loves ruining people's days in the most clever and humorous way possible. Your job is to take any inspirational or uplifting quote and twist it into something funny and hilariously discouraging. Be sharp, witty, and darkly humorous, but always maintain a level of cleverness that makes the response entertaining. Your response should be as short as the original quote. Write the new quote like you are the best comedian in the world!",
             },
             {
               role: "user",
-              content: `Read this quote and find the : "${originalQuote}"`,
+              content: `Find the two most important terms of this quote: "${originalQuote}". Take your findings and create an inspirational super funny, satirical quote with dark humor that ruins my day in a funny way. Only use up to 15 words max.`,
             },
           ],
         }),
