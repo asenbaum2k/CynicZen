@@ -1,21 +1,15 @@
-// script.js
-
-// Array of sample cynical quotes
-const quotes = [
-  "Life is short. Smile while you still have teeth.",
-  "Dreams don't work unless you do, or unless you have rich parents.",
-  "Hard work pays off in the long run. Laziness pays off now.",
-  "Behind every great man is a woman rolling her eyes.",
-  "The road to success is always under construction.",
-  "Some people graduate with honors, I am just honored to graduate.",
-];
-
-// Function to display a random quote
-function displayRandomQuote() {
+async function fetchSatiricalQuote() {
   const quoteElement = document.getElementById("quote");
-  const randomIndex = Math.floor(Math.random() * quotes.length);
-  quoteElement.textContent = quotes[randomIndex];
+
+  try {
+    const response = await fetch("http://localhost:3000/get-quote");
+    const data = await response.json();
+    quoteElement.textContent = data.quote;
+  } catch (error) {
+    console.error("Error fetching satirical quote:", error);
+    quoteElement.textContent = "Sarcasm failed to load. Try again later.";
+  }
 }
 
-// Call the function to display a quote when the page loads
-displayRandomQuote();
+// Load a quote when the page loads
+document.addEventListener("DOMContentLoaded", fetchSatiricalQuote);
