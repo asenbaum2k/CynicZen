@@ -1,13 +1,12 @@
 const express = require("express");
-const fetch = require("node-fetch");
 const cors = require("cors");
-require("dotenv").config(); // For storing API keys
+require("dotenv").config(); // Loads your OPENAI_API_KEY from .env
 
 const app = express();
 const port = 3000;
 
-app.use(cors()); // Allow frontend requests
-app.use(express.json()); // Allow JSON requests
+app.use(cors());
+app.use(express.json()); // Parse JSON from incoming requests
 
 // Fallback static quotes
 const fallbackQuotes = [
@@ -29,22 +28,40 @@ const fallbackQuotes = [
   "Some people graduate with honors, I am just honored to graduate.",
 ];
 
-// Function to fetch a ZenQuote
+/**
+ * Fetches a random quote from the ZenQuotes API.
+ * Returns null if there is an error (to trigger fallback).
+ */
 async function fetchZenQuote() {
   try {
     const response = await fetch("https://zenquotes.io/api/random");
     const data = await response.json();
-    return data[0].q; // Extract the quote
+    // ZenQuotes returns an array with one object: [{ q: "Quote", a: "Author" }]
+
+    return data[0].q || null;
   } catch (error) {
-    console.error("Error fetching ZenQuote:", error);
-    return null; // Return null if it fails
+    console.error("Error fetching from ZenQuotes:", error);
+    return null;
   }
 }
 
-// Function to transform quote via ChatGPT
+/**
+ * Sends the original quote to ChatGPT via OpenAI API
+ * to produce a funny, satirical version.
+ * Returns a fallback quote if there's an error.
+ */
 async function getSatiricalQuote(originalQuote) {
+  // If the original quote is null, skip ChatGPT and go straight to fallback
   if (!originalQuote) {
-    return fallbackQuotes[Math.floor(Math.random() * fallbackQuotes.length)]; // Return fallback quote
+    return randomFallbackQuote();
+  }
+  console.log(originalQuote);
+
+  const apiKey = process.env.OPENAI_API_KEY; // Make sure it's in your .env
+
+  if (!apiKey) {
+    console.error("No OPENAI_API_KEY found in .env. Using fallback quote.");
+    return randomFallbackQuote();
   }
 
   try {
@@ -54,7 +71,7 @@ async function getSatiricalQuote(originalQuote) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`, // Store API key in .env
+          Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
           model: "gpt-4o-mini",
@@ -62,11 +79,11 @@ async function getSatiricalQuote(originalQuote) {
             {
               role: "system",
               content:
-                "You are a very cynical and sarcastic assistant that turns profound quotes into sarcastic and humorous versions. Dark humor is your most favorite trait",
+                "You are a moody and sarcastic assistant that turns profound quotes into sarcastic, cynical versions. You want to really ruin my day. Dark humor is your favorite trait. Only use few words. Your sarcastic quote should not be longer than the original! This is very important! If the original quote is positive and engaging, please turn it into a discouraging quote! You can be really daring! My fail is your greatest joy. Just roast me!!!",
             },
             {
               role: "user",
-              content: `Make this quote sarcastic: "${originalQuote}"`,
+              content: `Read this quote and find the : "${originalQuote}"`,
             },
           ],
         }),
@@ -74,21 +91,37 @@ async function getSatiricalQuote(originalQuote) {
     );
 
     const openAIData = await openAIResponse.json();
-    return openAIData.choices[0].message.content.trim();
+
+    if (openAIData.choices && openAIData.choices.length > 0) {
+      console.log(openAIData.choices[0].message.content.trim());
+      return openAIData.choices[0].message.content.trim();
+    }
+    // If the API response is unexpected, fallback
+    return randomFallbackQuote();
   } catch (error) {
-    console.error("Error fetching satirical quote:", error);
-    return fallbackQuotes[Math.floor(Math.random() * fallbackQuotes.length)]; // Return fallback quote
+    console.error("Error calling OpenAI API:", error);
+    return randomFallbackQuote();
   }
 }
 
-// API endpoint to fetch and return satirical quote
+/** Returns one random fallback quote */
+function randomFallbackQuote() {
+  return fallbackQuotes[Math.floor(Math.random() * fallbackQuotes.length)];
+}
+
+/**
+ * GET endpoint: /get-quote
+ * 1. Fetch from ZenQuotes
+ * 2. Alter it via ChatGPT
+ * 3. Return the final satirical quote
+ */
 app.get("/get-quote", async (req, res) => {
   const zenQuote = await fetchZenQuote();
   const satiricalQuote = await getSatiricalQuote(zenQuote);
   res.json({ quote: satiricalQuote });
 });
 
-// Start server
+// Start the server
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
 });
